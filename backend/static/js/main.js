@@ -154,7 +154,7 @@ function drawRadarChart() {
             const y = cy + r * Math.sin(angle);
             i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = 'rgba(79, 109, 245, 0.12)';
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.12)';
         ctx.lineWidth = 1;
         ctx.stroke();
     }
@@ -167,7 +167,7 @@ function drawRadarChart() {
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(x, y);
-        ctx.strokeStyle = 'rgba(79, 109, 245, 0.15)';
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
         ctx.stroke();
 
         // Labels
@@ -191,9 +191,9 @@ function drawRadarChart() {
         const y = cy + R * val * Math.sin(angle);
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-    ctx.fillStyle = 'rgba(79, 109, 245, 0.2)';
+    ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
     ctx.fill();
-    ctx.strokeStyle = '#7b93ff';
+    ctx.strokeStyle = '#60a5fa';
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -373,20 +373,22 @@ function updateProgress(c, t) {
     document.getElementById('progressFill').style.width = p + '%';
 }
 
+const SPEAK_ON_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 5L6 9H3v6h3l5 4V5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a9 9 0 010 12.73" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const SPEAK_OFF_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 5L6 9H3v6h3l5 4V5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M23 9l-6 6M17 9l6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
 function toggleSpeak() { 
     speechEnabled = !speechEnabled; 
     const btn = document.getElementById('speakBtn');
     if (speechEnabled) {
-        btn.textContent = '🔊'; 
+        btn.innerHTML = SPEAK_ON_SVG;
         showToast('Speech Output ON');
-        // Unlock audio context for browsers that block async speech
         if (window.speechSynthesis) {
             const u = new SpeechSynthesisUtterance('');
             u.volume = 0;
             window.speechSynthesis.speak(u);
         }
     } else {
-        btn.textContent = '🔇'; 
+        btn.innerHTML = SPEAK_OFF_SVG;
         showToast('Speech Output OFF');
         if (window.speechSynthesis) window.speechSynthesis.cancel();
     }
