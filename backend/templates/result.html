@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Career Counsellor - Your personalized career recommendation result.">
+    <title>AI Career Counsellor - Your Result</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <div class="bg-animated"></div>
+
+    <div class="result-container" id="resultContainer">
+        <div class="spinner" id="loadingSpinner"></div>
+
+        <!-- Populated by JS -->
+        <div id="resultContent" style="display:none;">
+            <!-- Header -->
+            <div class="result-header">
+                <h1>Your Career Recommendation</h1>
+                <p>Based on AI analysis of your responses</p>
+            </div>
+
+            <!-- Main Prediction Card -->
+            <div class="prediction-card">
+                <div class="prediction-icon" id="predIcon">🎯</div>
+                <div class="prediction-field" id="predField"></div>
+                <div class="prediction-full-name" id="predFullName"></div>
+
+                <div class="confidence-ring">
+                    <svg viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#7c3aed"/>
+                                <stop offset="100%" style="stop-color:#a855f7"/>
+                            </linearGradient>
+                        </defs>
+                        <circle class="track" cx="60" cy="60" r="52"/>
+                        <circle class="fill" id="confCircle" cx="60" cy="60" r="52"
+                            stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+                    </svg>
+                    <div class="confidence-value" id="confValue">0%</div>
+                </div>
+
+                <p class="prediction-explanation" id="predExplanation"></p>
+            </div>
+
+            <!-- Two Column Grid -->
+            <div class="result-grid">
+                <!-- All Scores -->
+                <div class="scores-card">
+                    <div class="card-title"><span class="icon">📊</span> Field Match Scores</div>
+                    <div id="scoresContainer"></div>
+                </div>
+
+                <!-- Strengths -->
+                <div class="strengths-card">
+                    <div class="card-title"><span class="icon">💪</span> Detected Strengths</div>
+                    <div class="tags-container" id="strengthsTags"></div>
+                </div>
+            </div>
+
+            <div class="result-grid">
+                <!-- Personality Traits -->
+                <div class="traits-card">
+                    <div class="card-title"><span class="icon">🧠</span> Personality Traits</div>
+                    <div class="tags-container" id="traitsTags"></div>
+                </div>
+
+                <!-- Suggested Skills -->
+                <div class="skills-card">
+                    <div class="card-title"><span class="icon">🛠️</span> Suggested Skills to Develop</div>
+                    <div class="tags-container" id="skillsTags"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="result-actions">
+                <button class="result-btn secondary" onclick="toggleTranscript()">📜 View Chat Transcript</button>
+                <button class="result-btn primary" onclick="downloadPDF()">📄 Download Report (PDF)</button>
+                <button class="result-btn secondary" onclick="window.location.href='/chat'">💬 Start New Session</button>
+                <button class="result-btn secondary" onclick="window.location.href='/'">🏠 Home</button>
+            </div>
+
+            <!-- Transcript Container -->
+            <div class="scores-card" id="transcriptCard" style="display: none; margin-top: 2rem;">
+                <div class="card-title"><span class="icon">📜</span> Conversation Transcript</div>
+                <div id="transcriptMessages" style="margin-top: 1rem; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    <div class="spinner" id="transcriptSpinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FIELD_ICONS = {
+            CSE: '💻', MECHANICAL: '⚙️', CIVIL: '🏗️', ELECTRICAL: '⚡',
+            BIOLOGY: '🧬', CHEMISTRY: '🧪', PHYSICS: '🔭', MANAGEMENT: '📈'
+        };
+
+        // Extract session ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const sessionId = pathParts[pathParts.length - 1];
+        const token = localStorage.getItem('token');
+        let transcriptLoaded = false;
+
+        if (!token) { window.location.href = '/'; }
+
+        // Fetch result
+        async function loadResult() {
+            try {
+                const res = await fetch(`/api/predict/result/${sessionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load result');
+                const data = await res.json();
+                renderResult(data);
+            } catch (err) {
+                document.getElementById('loadingSpinner').innerHTML =
+                    '<p style="color:var(--danger);text-align:center;">Failed to load results. Please try again.</p>';
+            }
+        }
+
+        async function toggleTranscript() {
+            const card = document.getElementById('transcriptCard');
+            if (card.style.display === 'none') {
+                card.style.display = 'block';
+                if (!transcriptLoaded) {
+                    await loadTranscript();
+                }
+            } else {
+                card.style.display = 'none';
+            }
+        }
+
+        async function loadTranscript() {
+            try {
+                const res = await fetch(`/api/chat/history/${sessionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load history');
+                const data = await res.json();
+                
+                const container = document.getElementById('transcriptMessages');
+                container.innerHTML = ''; // clear spinner
+                
+                data.messages.forEach(msg => {
+                    const el = document.createElement('div');
+                    const isBot = msg.role === 'bot';
+                    el.style.padding = '1rem';
+                    el.style.marginBottom = '1rem';
+                    el.style.borderRadius = '8px';
+                    el.style.background = isBot ? 'rgba(124, 58, 237, 0.1)' : 'rgba(255, 255, 255, 0.05)';
+                    el.style.borderLeft = isBot ? '4px solid var(--primary)' : '4px solid var(--text-muted)';
+                    
+                    el.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>${isBot ? '🤖' : '👤'}</span> ${isBot ? 'AI Counsellor' : 'You'}
+                        </div>
+                        <div style="line-height: 1.5; font-size: 0.95rem; color: var(--text-light); white-space: pre-wrap;">${msg.message}</div>
+                    `;
+                    container.appendChild(el);
+                });
+                transcriptLoaded = true;
+            } catch (err) {
+                document.getElementById('transcriptSpinner').innerHTML = '<p style="color:var(--danger);">Failed to load transcript.</p>';
+            }
+        }
+
+        function renderResult(data) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('resultContent').style.display = 'block';
+
+            // Main prediction
+            document.getElementById('predIcon').textContent = FIELD_ICONS[data.predicted_field] || '🎯';
+            document.getElementById('predField').textContent = data.predicted_field;
+            document.getElementById('predFullName').textContent =
+                data.full_name || data.predicted_field;
+            document.getElementById('predExplanation').textContent = data.explanation;
+
+            // Confidence ring animation
+            const conf = data.confidence_score;
+            const circumference = 326.73;
+            const offset = circumference - (conf / 100) * circumference;
+            setTimeout(() => {
+                document.getElementById('confCircle').style.strokeDashoffset = offset;
+                animateCounter('confValue', 0, conf, '%');
+            }, 300);
+
+            // Score bars
+            const sorted = Object.entries(data.all_scores).sort((a, b) => b[1] - a[1]);
+            const scoresEl = document.getElementById('scoresContainer');
+            scoresEl.innerHTML = '';
+            sorted.forEach(([field, score], i) => {
+                const item = document.createElement('div');
+                item.className = 'score-item';
+                item.innerHTML = `
+                    <div class="score-label">
+                        <span>${FIELD_ICONS[field] || ''} ${field}</span>
+                        <span>${score.toFixed(1)}%</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-bar-fill" id="bar${i}"></div>
+                    </div>`;
+                scoresEl.appendChild(item);
+                setTimeout(() => {
+                    document.getElementById(`bar${i}`).style.width = score + '%';
+                }, 400 + i * 100);
+            });
+
+            // Tags
+            renderTags('strengthsTags', data.strengths);
+            renderTags('traitsTags', data.personality_traits);
+            renderTags('skillsTags', data.suggested_skills);
+        }
+
+        function renderTags(containerId, items) {
+            const el = document.getElementById(containerId);
+            el.innerHTML = '';
+            (items || []).forEach(item => {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.textContent = item;
+                el.appendChild(tag);
+            });
+        }
+
+        function animateCounter(elId, start, end, suffix) {
+            const el = document.getElementById(elId);
+            const duration = 1500;
+            const startTime = performance.now();
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const value = start + (end - start) * progress;
+                el.textContent = value.toFixed(1) + suffix;
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById('resultContent');
+            
+            // Expand transcript for PDF if it's hidden, then restore it
+            const card = document.getElementById('transcriptCard');
+            const wasHidden = card.style.display === 'none';
+            if (wasHidden && transcriptLoaded) card.style.display = 'block';
+
+            const opt = {
+                margin: 0.5,
+                filename: 'Career_Recommendation_Report.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, backgroundColor: '#0f0f1a' },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                if (wasHidden) card.style.display = 'none';
+            });
+        }
+
+        loadResult();
+    </script>
+</body>
+</html>
