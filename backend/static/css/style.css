@@ -5,28 +5,28 @@
 /* ---------- Google Fonts ---------- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* ---------- CSS Variables (Royal Blue / Sapphire Theme) ---------- */
+/* ---------- CSS Variables (Soft Modern Light Theme) ---------- */
 :root {
-    --bg-primary: #0c1222;
-    --bg-secondary: #111c36;
-    --bg-card: #162040;
-    --bg-input: #1b2850;
-    --bg-glass: rgba(16, 24, 48, 0.92);
-    --text-primary: #e8edf5;
-    --text-secondary: #94a3c4;
-    --text-muted: #5e7090;
-    --accent-primary: #4f6df5;
-    --accent-secondary: #7b93ff;
-    --accent-glow: rgba(79, 109, 245, 0.25);
-    --gradient-1: linear-gradient(135deg, #4f6df5 0%, #7b93ff 50%, #a78bfa 100%);
+    --bg-primary: #f4f9ff;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f1f5f9;
+    --bg-glass: rgba(255, 255, 255, 0.85);
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --accent-primary: #3b82f6;
+    --accent-secondary: #6366f1;
+    --accent-glow: rgba(59, 130, 246, 0.2);
+    --gradient-1: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
     --gradient-2: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
     --gradient-3: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
-    --border: rgba(79, 109, 245, 0.18);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 30px rgba(79, 109, 245, 0.12);
+    --border: #e2e8f0;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.1);
     --radius: 16px;
     --radius-sm: 10px;
     --radius-full: 50px;
@@ -49,16 +49,17 @@ body {
 .bg-animated {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     z-index: -1; overflow: hidden;
+    background: linear-gradient(135deg, #f4f9ff 0%, #e0eafc 100%);
 }
 .bg-animated::before {
     content: ''; position: absolute; width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
     top: -200px; right: -200px; border-radius: 50%;
     animation: floatBlob 20s ease-in-out infinite;
 }
 .bg-animated::after {
     content: ''; position: absolute; width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
     bottom: -150px; left: -150px; border-radius: 50%;
     animation: floatBlob 25s ease-in-out infinite reverse;
 }
@@ -174,8 +175,8 @@ body {
     text-align: center; padding: 10px; border-radius: var(--radius-sm);
     margin-top: 12px; font-size: 0.85rem; display: none;
 }
-.auth-message.error { display: block; background: rgba(239,68,68,0.15); color: #f87171; }
-.auth-message.success { display: block; background: rgba(16,185,129,0.15); color: #34d399; }
+.auth-message.error { display: block; background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+.auth-message.success { display: block; background: rgba(16,185,129,0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
 
 /* ============================================================
    CHAT PAGE
@@ -263,14 +264,14 @@ body {
     animation: tagIn 0.3s ease-out;
 }
 @keyframes tagIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-.kw-tag.cse { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.3); }
-.kw-tag.mechanical { background: rgba(249,115,22,0.15); color: #fb923c; border-color: rgba(249,115,22,0.3); }
-.kw-tag.electrical { background: rgba(6,182,212,0.15); color: #22d3ee; border-color: rgba(6,182,212,0.3); }
-.kw-tag.civil { background: rgba(16,185,129,0.15); color: #34d399; border-color: rgba(16,185,129,0.3); }
-.kw-tag.biology { background: rgba(236,72,153,0.15); color: #f472b6; border-color: rgba(236,72,153,0.3); }
-.kw-tag.chemistry { background: rgba(59,130,246,0.15); color: #60a5fa; border-color: rgba(59,130,246,0.3); }
-.kw-tag.physics { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
-.kw-tag.management { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.3); }
+.kw-tag.cse { background: rgba(99,102,241,0.1); color: #4f46e5; border-color: rgba(99,102,241,0.2); }
+.kw-tag.mechanical { background: rgba(249,115,22,0.1); color: #ea580c; border-color: rgba(249,115,22,0.2); }
+.kw-tag.electrical { background: rgba(6,182,212,0.1); color: #0891b2; border-color: rgba(6,182,212,0.2); }
+.kw-tag.civil { background: rgba(16,185,129,0.1); color: #059669; border-color: rgba(16,185,129,0.2); }
+.kw-tag.biology { background: rgba(236,72,153,0.1); color: #db2777; border-color: rgba(236,72,153,0.2); }
+.kw-tag.chemistry { background: rgba(59,130,246,0.1); color: #2563eb; border-color: rgba(59,130,246,0.2); }
+.kw-tag.physics { background: rgba(239,68,68,0.1); color: #dc2626; border-color: rgba(239,68,68,0.2); }
+.kw-tag.management { background: rgba(139,92,246,0.1); color: #7c3aed; border-color: rgba(139,92,246,0.2); }
 .kw-placeholder { font-size: 0.78rem; color: var(--text-muted); font-style: italic; }
 
 /* Decision path items */

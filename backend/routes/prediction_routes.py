@@ -5,17 +5,18 @@ Handles generating final career predictions and explanation reports.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from typing import Optional
 import json
 
-from backend.database.database import get_db
-from backend.database.models import User, ChatSession, ChatHistory, Result
-from backend.database.schemas import PredictionResponse
-from backend.utils.security import verify_token
-from backend.model.predictor import get_predictor
-from backend.routes.chat_routes import get_current_user, active_engines
-from backend.services.chat_engine import AdaptiveQuestionEngine
+from database.database import get_db
+from database.models import User, ChatSession, ChatHistory, Result
+from database.schemas import PredictionResponse
+from utils.security import verify_token
+from model.predictor import get_predictor
+from routes.chat_routes import get_current_user, active_engines
+from services.chat_engine import AdaptiveQuestionEngine
 
 # ---------------------------------------------------------------------------
 # Router Setup
@@ -24,7 +25,7 @@ router = APIRouter(prefix="/api/predict", tags=["Prediction"])
 
 
 @router.get("/result/{session_id}", response_model=PredictionResponse)
-def get_prediction(
+async def get_prediction(
     session_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -68,6 +69,7 @@ def get_prediction(
     # Check if result already exists (avoid re-computing)
     existing_result = db.query(Result).filter(Result.session_id == session_id).first()
     if existing_result:
+        low_conf = existing_result.confidence_score < 60
         return PredictionResponse(
             predicted_field=existing_result.predicted_field,
             confidence_score=existing_result.confidence_score,
@@ -76,6 +78,7 @@ def get_prediction(
             strengths=json.loads(existing_result.strengths) if existing_result.strengths else [],
             personality_traits=_get_traits(existing_result.predicted_field),
             suggested_skills=_get_skills(existing_result.predicted_field),
+            low_confidence_warning=low_conf
         )
 
     # Collect all user answers from the session
@@ -92,9 +95,13 @@ def get_prediction(
             detail="No answers found in this session."
         )
 
-    # Run the ML prediction pipeline
+    # Run the ML prediction pipeline in a background threadpool
     predictor = get_predictor()
-    result = predictor.predict(answers)
+    
+    def ml_task():
+        return predictor.predict(answers, skip_first=True)
+        
+    result = await run_in_threadpool(ml_task)
 
     # Save result to database
     new_result = Result(
@@ -109,6 +116,8 @@ def get_prediction(
     db.add(new_result)
     db.commit()
 
+    low_conf = result["confidence_score"] < 60
+
     return PredictionResponse(
         predicted_field=result["predicted_field"],
         confidence_score=result["confidence_score"],
@@ -117,6 +126,7 @@ def get_prediction(
         strengths=result["strengths"],
         personality_traits=result["personality_traits"],
         suggested_skills=result["suggested_skills"],
+        low_confidence_warning=low_conf
     )
 
 
@@ -157,11 +167,11 @@ def get_past_results(
 
 def _get_traits(field: str) -> list:
     """Get personality traits for a given career field."""
-    from backend.model.predictor import FIELD_DESCRIPTIONS
+    from model.predictor import FIELD_DESCRIPTIONS
     return FIELD_DESCRIPTIONS.get(field, {}).get("traits", [])
 
 
 def _get_skills(field: str) -> list:
     """Get suggested skills for a given career field."""
-    from backend.model.predictor import FIELD_DESCRIPTIONS
+    from model.predictor import FIELD_DESCRIPTIONS
     return FIELD_DESCRIPTIONS.get(field, {}).get("skills", [])

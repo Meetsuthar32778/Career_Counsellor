@@ -289,6 +289,9 @@ class AdaptiveQuestionEngine:
         # Track which fields have been explored
         self.explored_fields: Dict[str, int] = {field: 0 for field in self.field_scores}
 
+        # Track low confidence from ML model
+        self.low_confidence_warning: bool = False
+
     def get_welcome_message(self) -> str:
         """Return the chatbot's welcome/introduction message."""
         return (
@@ -345,11 +348,17 @@ class AdaptiveQuestionEngine:
             answer: The user's latest text response.
         """
         # Import inside function to avoid circular dependencies
-        from backend.model.predictor import get_predictor
+        from model.predictor import get_predictor
         predictor = get_predictor()
 
         # Run the ML prediction on ALL answers accumulated so far
-        result = predictor.predict(self.all_answers)
+        result = predictor.predict(self.all_answers, skip_first=True)
+
+        # If confidence is low, set a flag
+        if result.get("confidence_score", 100) < 60:
+            self.low_confidence_warning = True
+        else:
+            self.low_confidence_warning = False
 
         # Update live field scores directly with the ML model's probabilities
         if "all_scores" in result and result["all_scores"]:

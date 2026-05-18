@@ -8,7 +8,7 @@ chat history, and prediction results.
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from backend.database.database import Base
+from database.database import Base
 
 
 class User(Base):

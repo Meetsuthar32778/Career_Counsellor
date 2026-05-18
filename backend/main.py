@@ -23,12 +23,12 @@ from fastapi.responses import HTMLResponse
 import os
 
 # Import database initialization
-from .database.database import init_db
+from database.database import init_db
 
 # Import API routers
-from .routes.auth_routes import router as auth_router
-from .routes.chat_routes import router as chat_router
-from .routes.prediction_routes import router as prediction_router
+from routes.auth_routes import router as auth_router
+from routes.chat_routes import router as chat_router
+from routes.prediction_routes import router as prediction_router
 
 # ---------------------------------------------------------------------------
 # Application Setup
