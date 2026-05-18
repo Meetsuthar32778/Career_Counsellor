@@ -1,0 +1,4 @@
+Model,Mean Fold Accuracy,Std Fold Accuracy,OOF Accuracy,Weighted Precision,Weighted Recall,Weighted F1
+Linear SVM,0.995,0.0067,0.995,0.995,0.995,0.995
+Logistic Regression,0.9942,0.0075,0.9942,0.9942,0.9942,0.9942
+Random Forest,0.9933,0.009,0.9933,0.9933,0.9933,0.9933
