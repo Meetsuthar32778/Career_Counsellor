@@ -72,6 +72,7 @@ class ChatMessageResponse(BaseModel):
     is_complete: bool = False
     detected_interests: Optional[Dict[str, float]] = None
     suggestions: Optional[List[str]] = None
+    low_confidence_warning: bool = False
 
 
 class StartSessionResponse(BaseModel):
@@ -95,6 +96,7 @@ class PredictionResponse(BaseModel):
     strengths: List[str]
     personality_traits: List[str]
     suggested_skills: List[str]
+    low_confidence_warning: bool = False
 
 
 class SessionHistoryResponse(BaseModel):

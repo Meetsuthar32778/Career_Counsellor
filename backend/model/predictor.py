@@ -6,15 +6,17 @@ to predict career fields from student responses with confidence scores.
 """
 
 import os
-import pickle
+import joblib
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from model.preprocessing import clean_text
 
 # ---------------------------------------------------------------------------
 # Paths to saved model artifacts
 # ---------------------------------------------------------------------------
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
-RF_MODEL_PATH = os.path.join(MODEL_DIR, "rf_model.pkl")
+RF_MODEL_PATH = os.path.join(MODEL_DIR, "rf_model_best.joblib")
+EMBEDDER_PATH = os.path.join(MODEL_DIR, "embedder.joblib")
 CLASSES_PATH = os.path.join(MODEL_DIR, "classes.txt")
 
 # ---------------------------------------------------------------------------
@@ -80,14 +82,15 @@ class CareerPredictor:
 
     def __init__(self):
         """Initialize the predictor by loading the sentence-transformer and RF model."""
-        print("[CareerPredictor] Loading sentence-transformer model...")
-        self.sentence_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-        print("[CareerPredictor] Sentence-transformer loaded successfully.")
+        self.cache = {}   # simple dict cache: key = tuple(cleaned answers), value = prediction dict
+
+        print(f"[CareerPredictor] Loading embedder from {EMBEDDER_PATH}...")
+        self.encoder = joblib.load(EMBEDDER_PATH)
+        print("[CareerPredictor] Embedder loaded successfully.")
 
         # Load the trained RandomForest classifier
         print(f"[CareerPredictor] Loading RF model from {RF_MODEL_PATH}...")
-        with open(RF_MODEL_PATH, "rb") as f:
-            self.rf_model = pickle.load(f)
+        self.rf_model = joblib.load(RF_MODEL_PATH)
         print("[CareerPredictor] RF model loaded successfully.")
 
         # Load the class labels
@@ -105,9 +108,9 @@ class CareerPredictor:
         Returns:
             A numpy array of shape (384,).
         """
-        return self.sentence_model.encode(text, show_progress_bar=False)
+        return self.encoder.encode([text])[0]
 
-    def predict(self, answers: list) -> dict:
+    def predict(self, answers: list, skip_first: bool = True) -> dict:
         """
         Predict the career field from a list of student answers.
 
@@ -119,6 +122,7 @@ class CareerPredictor:
 
         Args:
             answers: List of student answer strings.
+            skip_first: Whether to exclude the first (demographic) answer.
 
         Returns:
             Dictionary with predicted_field, confidence_score, all_scores,
@@ -135,21 +139,29 @@ class CareerPredictor:
                 "suggested_skills": [],
             }
 
-        # Step 1: Compute embeddings for each answer
-        embeddings = [self.get_embedding(answer) for answer in answers]
+        # Step 1: Exclude the first demographic question (if requested and more than 1 answer)
+        answers_to_process = answers[1:] if (skip_first and len(answers) > 1) else answers
 
-        # Step 2: Average the embeddings to create a single feature vector
-        avg_embedding = np.mean(embeddings, axis=0).reshape(1, -1)
+        # Check cache
+        cleaned_tuple = tuple(clean_text(ans) for ans in answers_to_process)
+        if cleaned_tuple in self.cache:
+            return self.cache[cleaned_tuple]
 
-        # Step 3: Get prediction probabilities
-        probabilities = self.rf_model.predict_proba(avg_embedding)[0]
+        # Step 2: Concatenate all answers into one string
+        combined_text = " ".join(cleaned_tuple)
 
-        # Step 4: Map probabilities to class labels
+        # Step 4: Compute a single embedding using the snippet format
+        embedding = self.encoder.encode([combined_text])[0]
+
+        # Step 5: Get prediction probabilities
+        probabilities = self.rf_model.predict_proba([embedding])[0]
+
+        # Step 6: Map probabilities to class labels
         all_scores = {}
         for i, cls in enumerate(self.classes):
             all_scores[cls] = round(float(probabilities[i]) * 100, 2)
 
-        # Step 5: Get the top prediction
+        # Step 7: Get the top prediction
         predicted_index = np.argmax(probabilities)
         predicted_field = self.classes[predicted_index]
         confidence_score = round(float(probabilities[predicted_index]) * 100, 2)
@@ -157,7 +169,7 @@ class CareerPredictor:
         # Step 6: Build the explanation from metadata
         field_info = FIELD_DESCRIPTIONS.get(predicted_field, {})
 
-        return {
+        result = {
             "predicted_field": predicted_field,
             "full_name": field_info.get("full_name", predicted_field),
             "confidence_score": confidence_score,
@@ -167,6 +179,12 @@ class CareerPredictor:
             "personality_traits": field_info.get("traits", []),
             "suggested_skills": field_info.get("skills", []),
         }
+        
+        self.cache[cleaned_tuple] = result
+        return result
+
+    def clear_cache(self):
+        self.cache.clear()
 
     def _detect_strengths(self, answers: list) -> list:
         """

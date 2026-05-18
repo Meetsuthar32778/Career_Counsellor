@@ -6,16 +6,17 @@ the adaptive questioning flow.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from typing import Optional
 import uuid
 from datetime import datetime
 
-from backend.database.database import get_db
-from backend.database.models import User, ChatSession, ChatHistory
-from backend.database.schemas import ChatMessageRequest, ChatMessageResponse, StartSessionResponse
-from backend.utils.security import verify_token
-from backend.services.chat_engine import AdaptiveQuestionEngine
+from database.database import get_db
+from database.models import User, ChatSession, ChatHistory
+from database.schemas import ChatMessageRequest, ChatMessageResponse, StartSessionResponse
+from utils.security import verify_token
+from services.chat_engine import AdaptiveQuestionEngine
 
 # ---------------------------------------------------------------------------
 # Router Setup
@@ -110,7 +111,7 @@ def start_session(user: User = Depends(get_current_user), db: Session = Depends(
 
 
 @router.post("/message", response_model=ChatMessageResponse)
-def send_message(
+async def send_message(
     request: ChatMessageRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -163,8 +164,11 @@ def send_message(
     # Save user message
     db.add(ChatHistory(session_id=session_id, role="user", message=request.message))
 
-    # Process answer and get next question
-    next_question, next_suggestions, is_complete = engine.process_answer_and_get_next(request.message)
+    # Process answer and get next question in a background threadpool to unblock async event loop
+    def ml_task():
+        return engine.process_answer_and_get_next(request.message)
+
+    next_question, next_suggestions, is_complete = await run_in_threadpool(ml_task)
 
     # Update session question count
     session.question_count = engine.question_number - 1
@@ -196,6 +200,7 @@ def send_message(
         is_complete=is_complete,
         detected_interests=engine.get_detected_interests(),
         suggestions=suggestions_to_send,
+        low_confidence_warning=engine.low_confidence_warning,
     )
 
 

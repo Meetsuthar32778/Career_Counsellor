@@ -6,16 +6,16 @@ Handles user registration, login, and token-based authentication.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from backend.database.database import get_db
-from backend.database.models import User
-from backend.database.schemas import (
+from database.database import get_db
+from database.models import User
+from database.schemas import (
     UserRegister,
     UserLogin,
     ForgotPasswordRequest,
     TokenResponse,
     UserResponse,
 )
-from backend.utils.security import hash_password, verify_password, create_access_token
+from utils.security import hash_password, verify_password, create_access_token
 
 # ---------------------------------------------------------------------------
 # Router Setup
