@@ -2,16 +2,17 @@ import os
 import joblib
 import pandas as pd
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+from sentence_transformers import SentenceTransformer
 from preprocessing import clean_text
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATASET_PATH = os.path.join(os.path.dirname(BASE_DIR), "dataset", "career_dataset.csv")
 MODEL_PATH = os.path.join(BASE_DIR, "rf_model_best.joblib")
-EMBEDDER_PATH = os.path.join(BASE_DIR, "embedder.joblib")
+EMBEDDER_MODEL_NAME = "all-MiniLM-L6-v2"
 
 print("Loading model and encoder...")
 rf = joblib.load(MODEL_PATH)
-encoder = joblib.load(EMBEDDER_PATH)
+encoder = SentenceTransformer(EMBEDDER_MODEL_NAME)
 
 print("Loading dataset...")
 df = pd.read_csv(DATASET_PATH)

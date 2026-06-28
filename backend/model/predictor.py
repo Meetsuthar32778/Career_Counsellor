@@ -18,6 +18,7 @@ MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 RF_MODEL_PATH = os.path.join(MODEL_DIR, "rf_model_best.joblib")
 EMBEDDER_PATH = os.path.join(MODEL_DIR, "embedder.joblib")
 CLASSES_PATH = os.path.join(MODEL_DIR, "classes.txt")
+EMBEDDER_MODEL_NAME = "all-MiniLM-L6-v2"
 
 # ---------------------------------------------------------------------------
 # Career field metadata for explanations
@@ -84,8 +85,8 @@ class CareerPredictor:
         """Initialize the predictor by loading the sentence-transformer and RF model."""
         self.cache = {}   # simple dict cache: key = tuple(cleaned answers), value = prediction dict
 
-        print(f"[CareerPredictor] Loading embedder from {EMBEDDER_PATH}...")
-        self.encoder = joblib.load(EMBEDDER_PATH)
+        print(f"[CareerPredictor] Loading embedder model {EMBEDDER_MODEL_NAME}...")
+        self.encoder = SentenceTransformer(EMBEDDER_MODEL_NAME)
         print("[CareerPredictor] Embedder loaded successfully.")
 
         # Load the trained RandomForest classifier
