@@ -180,3 +180,44 @@ This script will output a detailed `classification_report` (Precision, Recall, F
 - **Stateless Backend:** Currently, the `AdaptiveQuestionEngine` maintains state in memory (`active_engines` dictionary). For horizontal scalability (e.g., Kubernetes, multiple Uvicorn workers), this state should be migrated to a Redis cache.
 - **LLM Integration (Agentic Approach):** Transition the decision-making engine to an LLM (using LangChain or LangGraph) instead of rule-based keyword matching to handle vastly nuanced and unpredictable user feedback dynamically.
 - **Feedback Loop:** Implement a user rating system on the final results page to collect active feedback, enabling continuous online fine-tuning of the Random Forest model over time.
+
+---
+
+## Docker
+
+Build the Docker image:
+
+```bash
+docker build -t career-counsellor .
+```
+
+Run the container (production):
+
+```bash
+docker run -p 5000:5000 career-counsellor
+```
+
+Quick dev run (no rebuild — points Uvicorn at the backend package):
+
+```bash
+docker run -p 5000:5000 career-counsellor \
+   uvicorn main:app --app-dir backend --reload --host 0.0.0.0 --port 5000
+```
+
+Alternate (set `PYTHONPATH` so `backend` imports resolve):
+
+```bash
+docker run -p 5000:5000 -e PYTHONPATH=/app/backend career-counsellor \
+   uvicorn backend.main:app --reload --host 0.0.0.0 --port 5000
+```
+
+
+Troubleshooting
+- **ModuleNotFoundError: No module named 'database'** — happens when Uvicorn runs from the container root but imports expect package context. Fixes:
+   - Start Uvicorn with `backend.main:app` (recommended), or
+   - Use `--app-dir backend` when running `uvicorn main:app`, or
+   - Set `PYTHONPATH=/app/backend` in the container, or
+   - Change imports in `backend/main.py` to fully-qualified module paths like `from backend.database.database import init_db` or to relative imports.
+- For development, keep `--reload`; remove it for production images.
+
+If you'd like, I can also patch the `Dockerfile` in the repo to the recommended version.
