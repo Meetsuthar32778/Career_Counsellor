@@ -197,27 +197,36 @@ Run the container (production):
 docker run -p 5000:5000 career-counsellor
 ```
 
-Quick dev run (no rebuild — points Uvicorn at the backend package):
+Quick dev run (with auto-reload):
 
 ```bash
 docker run -p 5000:5000 career-counsellor \
    uvicorn main:app --app-dir backend --reload --host 0.0.0.0 --port 5000
 ```
 
-Alternate (set `PYTHONPATH` so `backend` imports resolve):
+Troubleshooting
+- **ModuleNotFoundError: No module named 'database'** — run Uvicorn with `--app-dir backend` (as in the Dockerfile and commands above).
 
-```bash
-docker run -p 5000:5000 -e PYTHONPATH=/app/backend career-counsellor \
-   uvicorn backend.main:app --reload --host 0.0.0.0 --port 5000
+---
+
+## 11. CI/CD Pipeline (GitHub Actions)
+
+The repository includes a complete CI/CD workflow at:
+
+```text
+.github/workflows/ci-cd.yml
 ```
 
+### What it does
 
-Troubleshooting
-- **ModuleNotFoundError: No module named 'database'** — happens when Uvicorn runs from the container root but imports expect package context. Fixes:
-   - Start Uvicorn with `backend.main:app` (recommended), or
-   - Use `--app-dir backend` when running `uvicorn main:app`, or
-   - Set `PYTHONPATH=/app/backend` in the container, or
-   - Change imports in `backend/main.py` to fully-qualified module paths like `from backend.database.database import init_db` or to relative imports.
-- For development, keep `--reload`; remove it for production images.
+1. On every push/PR to `main`, it runs automated checks:
+   - Install dependencies
+   - `python -m compileall backend tests`
+   - `pytest -q tests`
+2. Builds the Docker image in CI to validate containerization.
+3. On pushes to `main`, publishes the image to GHCR:
 
-If you'd like, I can also patch the `Dockerfile` in the repo to the recommended version.
+```bash
+ghcr.io/<owner>/<repo>:latest
+ghcr.io/<owner>/<repo>:<commit-sha>
+```

@@ -1,13 +1,16 @@
-FROM python 
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-COPY . .
-ADD requirements.txt .
+COPY requirements.txt ./
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend ./backend
 
 EXPOSE 5000
 
-CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "main:app", "--app-dir", "backend", "--host", "0.0.0.0", "--port", "5000"]
